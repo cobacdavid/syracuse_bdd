@@ -9,39 +9,19 @@ curseur = base.cursor()
 
 
 def duree_vol(n):
-    if n % 2 == 0:
-        duree = 1
-    else:
-        # on construit la suite
-        suite = [n]
-        taille = 0
-        duree = 0
-        en_cours = True
-        q = "select suite from termes where p_terme="
-        while en_cours:
-            # on récupère la suite petit à petit
-            curseur.execute(q + str(n))
-            r = curseur.fetchone()
-            suite += eval(r[0])
-            # on regarde si on a la durée
-            taille = len(suite)
-            while duree < taille and suite[duree] >= suite[0]:
-                duree += 1
-            # si on n'est pas arrivé à la fin de la liste
-            # c'est qu'on a trouvé (on est passé en dessous)
-            if duree < taille:
-                en_cours = False
-            n = suite[-1]
-    return duree - 1
+    duree = 0
+    while n != 1:
+        n = n // 2 if n % 2 == 0 else 3 * n + 1
+        duree += 1
+    return duree
 
-
-curseur.execute("create table if not exists dva (p_terme INTEGER, duree_vol_altitude INTEGER)")
+curseur.execute("create table if not exists dv (p_terme INTEGER, duree_vol INTEGER)")
 t0 = time.time()
 t = t0
-for i in range(384_000, 500_001):
-    if i % 1_000 == 0:
+for i in range(500_001, 1_000_001):
+    if i % 10_000 == 0:
         base.commit()
-        curseur.execute("select count(*) from dva")
+        curseur.execute("select count(*) from dv")
         N = curseur.fetchall()[0][0]
         texte = str(i) + " est atteint\n"
         texte += str(N) + " entrées dans la base"
@@ -56,12 +36,12 @@ for i in range(384_000, 500_001):
         texte += "\n" + boucle + " " + deja
         envoiSMS.message(texte)
         print(i)
-    q = "select * from dva where p_terme="
-    curseur.execute(q + str(i))
-    if curseur.fetchone() is None:
-        d = duree_vol(i)
-        entree = "insert into dva values(?, ?)"
-        curseur.execute(entree, (i, d))
+    # q = "select * from dv where p_terme="
+    # curseur.execute(q + str(i))
+    # if curseur.fetchone() is None:
+    d = duree_vol(i)
+    entree = "insert into dv values(?, ?)"
+    curseur.execute(entree, (i, d))
 
 base.commit()
 base.close()
